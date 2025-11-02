@@ -9,25 +9,34 @@ const char *rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com";
 const char *contractAddress = "0x00000000610d8474af42d87b42f8c54efc05e023";
 const int tokenId = 3921;
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
     Serial.println("Starting Picobound LED Matrix...");
 
     displayInit();
-    if (!connectWiFi(ssid, password)) {
+    if (!connectWiFi(ssid, password))
+    {
         ESP.restart();
     }
 }
 
-void loop() {
+void loop()
+{
     Serial.println("Fetching image...");
     String img = getPicoboundImage(rpcUrl, contractAddress, tokenId);
+    Serial.printf("Image data length: %d\n", img.length());
+    Serial.println(img);
 
-    if (img.length() == 256) {
+    if (img.length() == 258)
+    {
+        img.replace("0x", "");
         drawPixelString(img);
-    } else {
+    }
+    else
+    {
         showTestPattern();
     }
 
-    delay(30000);
+    delay(60 * 60 * 1000);
 }

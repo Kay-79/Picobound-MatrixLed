@@ -3,23 +3,50 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
-String parseAbiEncodedString(String hexResult) {
-    if (hexResult.startsWith("0x")) hexResult.remove(0, 2);
-    String lengthHex = hexResult.substring(64, 128);
-    unsigned long length = strtoul(lengthHex.c_str(), NULL, 16);
-    if (length == 0 || length > 512) return "";
+struct Metadata
+{
+    String treasuryWallet;
+    String imageHex;
+    String url;
+};
 
-    String dataHex = hexResult.substring(128, 128 + (length * 2));
-    String result = "";
-    for (int i = 0; i < length * 2; i += 2) {
-        char c = (char)strtol(dataHex.substring(i, i + 2).c_str(), NULL, 16);
-        if (c == 0) break;
-        result += c;
+Metadata parseAbiMetadata(String hex)
+{
+    Metadata md;
+    if (hex.startsWith("0x"))
+        hex.remove(0, 2);
+
+    String addressHex = hex.substring(24, 64);
+    md.treasuryWallet = "0x" + addressHex;
+
+    unsigned long imageOffset = strtoul(hex.substring(64, 128).c_str(), NULL, 16);
+    unsigned long urlOffset = strtoul(hex.substring(128, 192).c_str(), NULL, 16);
+
+    unsigned long imageLength = strtoul(hex.substring(imageOffset * 2, imageOffset * 2 + 64).c_str(), NULL, 16);
+    md.imageHex = "0x" + hex.substring(imageOffset * 2 + 64, imageOffset * 2 + 64 + imageLength * 2);
+
+    unsigned long urlLength = strtoul(hex.substring(urlOffset * 2, urlOffset * 2 + 64).c_str(), NULL, 16);
+    if (urlLength > 0 && urlLength < 512)
+    {
+        String urlHex = hex.substring(urlOffset * 2 + 64, urlOffset * 2 + 64 + urlLength * 2);
+        md.url = "";
+        for (int i = 0; i < urlLength * 2; i += 2)
+        {
+            char c = (char)strtol(urlHex.substring(i, i + 2).c_str(), NULL, 16);
+            if (c == 0)
+                break;
+            md.url += c;
+        }
     }
-    return result;
+    else
+    {
+        md.url = "";
+    }
+    return md;
 }
 
-String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId) {
+String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId)
+{
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
@@ -37,28 +64,45 @@ String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId) 
 
     char tokenIdHex[65];
     sprintf(tokenIdHex, "%064x", tokenId);
-    callObj["data"] = String("0xb4b3f359") + tokenIdHex;
+
+    String data = String("0x834d5fac") + tokenIdHex;
+    callObj["data"] = data;
     params.add("latest");
 
     String body;
     serializeJson(docRequest, body);
 
+    Serial.println("=== Sending Request ===");
+    Serial.println(body);
+
     int httpCode = http.POST(body);
-    if (httpCode != 200) {
+    Serial.printf("HTTP code: %d\n", httpCode);
+
+    if (httpCode != 200)
+    {
         Serial.printf("HTTP failed: %d\n", httpCode);
         http.end();
         return "";
     }
 
+    String payload = http.getString();
+    Serial.println("=== Response ===");
+    Serial.println(payload);
+
     DynamicJsonDocument docResponse(8192);
-    DeserializationError error = deserializeJson(docResponse, http.getString());
+    DeserializationError error = deserializeJson(docResponse, payload);
     http.end();
 
-    if (error) {
+    if (error)
+    {
         Serial.printf("JSON parse error: %s\n", error.c_str());
         return "";
     }
 
     String hexResult = docResponse["result"] | "";
-    return parseAbiEncodedString(hexResult);
+    String img = parseAbiMetadata(hexResult).imageHex;
+    Serial.println("Parsed image string:");
+    Serial.println(img);
+
+    return img;
 }
