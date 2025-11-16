@@ -3,8 +3,10 @@
 #include "Blockchain.h"
 #include "Display.h"
 
-const char *ssid = "Bamos Coffee";
-const char *password = "bamosxinchao";
+const char *ssid = "Lock B";
+const char *password = "0347979595";
+// const char *ssid = "Bamos Coffee";
+// const char *password = "bamosxinchao";
 const char *rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com";
 const char *contractAddress = "0x00000000610d8474af42d87b42f8c54efc05e023";
 const int tokenId = 3675;

@@ -1,12 +1,12 @@
 #include "Display.h"
 
-#define DATA_PIN 18
+#define DATA_PIN 10
 #define LED_TYPE WS2812B
 #define COLOR_ORDER GRB
 #define BRIGHTNESS 5
 #define SERPENTINE_LAYOUT true
 #define FLIP_HORIZONTAL false
-#define FLIP_VERTICAL false
+#define FLIP_VERTICAL true
 
 CRGB leds[NUM_LEDS];
 
