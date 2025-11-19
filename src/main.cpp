@@ -1,55 +1,121 @@
 #include <Arduino.h>
-#include "Network.h"
+#include "AppConfig.h"
 #include "Blockchain.h"
 #include "Display.h"
+#include "Button.h"
+#include "Network.h"
 
-const char *ssid = "Lock B";
-const char *password = "0347979595";
-// const char *ssid = "Bamos Coffee";
-// const char *password = "bamosxinchao";
-const char *rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com";
-const char *contractAddress = "0x00000000610d8474af42d87b42f8c54efc05e023";
-const int tokenId = 3675;
-
-// Brightness control (IO2)
-const int BUTTON_PIN = 0;
-const uint8_t BRIGHTNESS_MIN = 0;
-const uint8_t BRIGHTNESS_MAX = 255;
-const uint8_t BRIGHTNESS_STEP = 5;
-const uint8_t DEFAULT_BRIGHTNESS = 10;
-
-uint8_t g_brightness = DEFAULT_BRIGHTNESS;
-String img;
-
-// Debounce & press type detection
-bool btnReading = HIGH;
-bool btnStable = HIGH;
-unsigned long lastDebounceMs = 0;
-const unsigned long debounceMs = 30;
-unsigned long pressStartMs = 0;
-bool pressActive = false;
-const unsigned long longPressMs = 600;
-
-// Optional brightness setter from Display (won't break if missing)
-extern void displaySetBrightness(uint8_t) __attribute__((weak));
-static inline void applyBrightness()
+namespace
 {
-    Serial.printf("Applying brightness: %d\n", g_brightness);
-    FastLED.setBrightness(g_brightness);
-    drawPixelString(img);
-}
+    String g_image;
+    ButtonState g_decButton;
+    ButtonState g_incButton;
+    uint8_t g_brightness = AppConfig::Brightness::DEFAULT_LEVEL;
+    unsigned long g_lastFetchMs = 0;
+
+    void applyBrightness()
+    {
+        Serial.printf("Applying brightness: %u\n", g_brightness);
+        displaySetBrightness(g_brightness);
+    }
+
+    void initializeButtons()
+    {
+        initButton(g_decButton, AppConfig::Buttons::DECREASE_PIN);
+        initButton(g_incButton, AppConfig::Buttons::INCREASE_PIN);
+    }
+
+    void adjustBrightness(int delta)
+    {
+        int next = static_cast<int>(g_brightness) + delta;
+        if (next < AppConfig::Brightness::MIN_LEVEL)
+        {
+            next = AppConfig::Brightness::MIN_LEVEL;
+        }
+        else if (next > AppConfig::Brightness::MAX_LEVEL)
+        {
+            next = AppConfig::Brightness::MAX_LEVEL;
+        }
+
+        if (next != g_brightness)
+        {
+            g_brightness = static_cast<uint8_t>(next);
+            applyBrightness();
+        }
+    }
+
+    void handleBrightnessInput(unsigned long now)
+    {
+        if (buttonReleased(g_decButton, AppConfig::Buttons::DECREASE_PIN, now, AppConfig::Buttons::DEBOUNCE_MS))
+        {
+            adjustBrightness(-AppConfig::Brightness::STEP);
+        }
+
+        if (buttonReleased(g_incButton, AppConfig::Buttons::INCREASE_PIN, now, AppConfig::Buttons::DEBOUNCE_MS))
+        {
+            adjustBrightness(AppConfig::Brightness::STEP);
+        }
+    }
+
+    bool isValidImage(const String &image)
+    {
+        return image.length() == AppConfig::Blockchain::EXPECTED_IMAGE_CHARS;
+    }
+
+    String normalizePixelString(const String &image)
+    {
+        String sanitized = image;
+        if (sanitized.startsWith("0x"))
+        {
+            sanitized.remove(0, 2);
+        }
+        return sanitized;
+    }
+
+    void renderImageOrFallback(const String &image)
+    {
+        if (isValidImage(image))
+        {
+            drawPixelString(normalizePixelString(image));
+        }
+        else
+        {
+            Serial.println("Image payload invalid, displaying test pattern.");
+            showTestPattern();
+        }
+    }
+
+    bool shouldFetchImage(unsigned long now)
+    {
+        return g_lastFetchMs == 0 || (now - g_lastFetchMs) >= AppConfig::Timing::FETCH_INTERVAL_MS;
+    }
+
+    void fetchAndDisplayImage()
+    {
+        Serial.println("Fetching image...");
+        g_image = getPicoboundImage(AppConfig::Blockchain::RPC_URL,
+                                    AppConfig::Blockchain::CONTRACT_ADDRESS,
+                                    AppConfig::Blockchain::TOKEN_ID);
+        Serial.printf("Image data length: %d\n", g_image.length());
+        if (g_image.length() > 0)
+        {
+            Serial.println(g_image);
+        }
+        renderImageOrFallback(g_image);
+    }
+} // namespace
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(AppConfig::SERIAL_BAUD);
     Serial.println("Starting Picobound LED Matrix...");
 
     displayInit();
+    showTestPattern();
     applyBrightness();
+    initializeButtons();
 
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
-
-    if (!connectWiFi(ssid, password))
+    if (!connectWiFi(AppConfig::Wifi::SSID, AppConfig::Wifi::PASSWORD))
     {
         ESP.restart();
     }
@@ -57,65 +123,13 @@ void setup()
 
 void loop()
 {
-    static unsigned long lastFetchMs = 0;
-    const unsigned long fetchIntervalMs = 3600000UL;
     unsigned long now = millis();
+    handleBrightnessInput(now);
 
-    int reading = digitalRead(BUTTON_PIN);
-    if (reading != btnReading)
+    if (shouldFetchImage(now))
     {
-        lastDebounceMs = now;
-        btnReading = reading;
-    }
-    if ((now - lastDebounceMs) > debounceMs)
-    {
-        if (btnStable == HIGH && btnReading == LOW)
-        {
-            pressActive = true;
-            pressStartMs = now;
-        }
-        if (btnStable == LOW && btnReading == HIGH)
-        {
-            if (pressActive)
-            {
-                unsigned long held = now - pressStartMs;
-                if (held >= longPressMs)
-                {
-                    g_brightness = (g_brightness >= BRIGHTNESS_STEP)
-                                       ? (uint8_t)(g_brightness - BRIGHTNESS_STEP)
-                                       : BRIGHTNESS_MIN;
-                }
-                else
-                {
-                    g_brightness = (g_brightness <= (BRIGHTNESS_MAX - BRIGHTNESS_STEP))
-                                       ? (uint8_t)(g_brightness + BRIGHTNESS_STEP)
-                                       : BRIGHTNESS_MAX;
-                }
-                applyBrightness();
-                pressActive = false;
-            }
-        }
-        btnStable = btnReading;
-    }
-
-    if (lastFetchMs == 0 || (now - lastFetchMs) >= fetchIntervalMs)
-    {
-        lastFetchMs = now;
-
-        Serial.println("Fetching image...");
-        img = getPicoboundImage(rpcUrl, contractAddress, tokenId);
-        Serial.printf("Image data length: %d\n", img.length());
-        Serial.println(img);
-
-        if (img.length() == 258)
-        {
-            img.replace("0x", "");
-            drawPixelString(img);
-        }
-        else
-        {
-            showTestPattern();
-        }
+        g_lastFetchMs = now;
+        fetchAndDisplayImage();
     }
 
     delay(1);

@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 #include <FastLED.h>
 
 #define MATRIX_WIDTH 16
@@ -10,3 +11,5 @@ extern CRGB leds[NUM_LEDS];
 void displayInit();
 void showTestPattern();
 void drawPixelString(const String &pixelString);
+bool displayRefreshLastFrame();
+void displaySetBrightness(uint8_t brightness);

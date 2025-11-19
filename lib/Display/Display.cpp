@@ -16,17 +16,39 @@ CRGB pico8_palette[16] = {
     CRGB(255, 0, 77), CRGB(255, 163, 0), CRGB(255, 236, 39), CRGB(0, 228, 54),
     CRGB(41, 173, 255), CRGB(131, 118, 156), CRGB(255, 119, 168), CRGB(255, 204, 170)};
 
-static inline uint16_t XY(uint8_t x, uint8_t y)
+namespace
 {
-    if (FLIP_HORIZONTAL)
-        x = MATRIX_WIDTH - 1 - x;
-    if (FLIP_VERTICAL)
-        y = MATRIX_HEIGHT - 1 - y;
-    uint16_t i = SERPENTINE_LAYOUT && (y & 1)
-                     ? y * MATRIX_WIDTH + (MATRIX_WIDTH - 1 - x)
-                     : y * MATRIX_WIDTH + x;
-    return i < NUM_LEDS ? i : 0;
-}
+
+    static inline uint16_t XY(uint8_t x, uint8_t y)
+    {
+        if (FLIP_HORIZONTAL)
+            x = MATRIX_WIDTH - 1 - x;
+        if (FLIP_VERTICAL)
+            y = MATRIX_HEIGHT - 1 - y;
+        uint16_t i = SERPENTINE_LAYOUT && (y & 1)
+                         ? y * MATRIX_WIDTH + (MATRIX_WIDTH - 1 - x)
+                         : y * MATRIX_WIDTH + x;
+        return i < NUM_LEDS ? i : 0;
+    }
+
+    String g_lastFrame;
+
+    void renderFrame(const String &pixelString)
+    {
+        for (uint8_t y = 0; y < MATRIX_HEIGHT; y++)
+        {
+            for (uint8_t x = 0; x < MATRIX_WIDTH; x++)
+            {
+                int pos = y * MATRIX_WIDTH + x;
+                char hexChar = pos < pixelString.length() ? pixelString[pos] : '0';
+                int colorIndex = (hexChar >= 'a') ? 10 + (hexChar - 'a') : (hexChar >= 'A') ? 10 + (hexChar - 'A')
+                                                                                            : hexChar - '0';
+                leds[XY(x, y)] = pico8_palette[colorIndex & 0x0F];
+            }
+        }
+        FastLED.show();
+    }
+} // namespace
 
 void displayInit()
 {
@@ -34,6 +56,7 @@ void displayInit()
     FastLED.setBrightness(BRIGHTNESS);
     FastLED.clear();
     FastLED.show();
+    g_lastFrame = "";
 }
 
 void showTestPattern()
@@ -44,16 +67,25 @@ void showTestPattern()
 
 void drawPixelString(const String &pixelString)
 {
-    for (uint8_t y = 0; y < MATRIX_HEIGHT; y++)
+    g_lastFrame = pixelString;
+    renderFrame(pixelString);
+}
+
+bool displayRefreshLastFrame()
+{
+    if (g_lastFrame.length() >= NUM_LEDS)
     {
-        for (uint8_t x = 0; x < MATRIX_WIDTH; x++)
-        {
-            int pos = y * MATRIX_WIDTH + x;
-            char hexChar = pixelString[pos];
-            int colorIndex = (hexChar >= 'a') ? 10 + (hexChar - 'a') : (hexChar >= 'A') ? 10 + (hexChar - 'A')
-                                                                                        : hexChar - '0';
-            leds[XY(x, y)] = pico8_palette[colorIndex];
-        }
+        renderFrame(g_lastFrame);
+        return true;
     }
-    FastLED.show();
+    return false;
+}
+
+void displaySetBrightness(uint8_t brightness)
+{
+    FastLED.setBrightness(brightness);
+    if (!displayRefreshLastFrame())
+    {
+        FastLED.show();
+    }
 }

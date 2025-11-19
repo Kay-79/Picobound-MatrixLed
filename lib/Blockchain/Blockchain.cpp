@@ -54,12 +54,12 @@ String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId)
     http.begin(client, rpcUrl);
     http.addHeader("Content-Type", "application/json");
 
-    DynamicJsonDocument docRequest(768);
+    JsonDocument docRequest;
     docRequest["jsonrpc"] = "2.0";
     docRequest["id"] = 1;
     docRequest["method"] = "eth_call";
-    JsonArray params = docRequest.createNestedArray("params");
-    JsonObject callObj = params.createNestedObject();
+    JsonArray params = docRequest["params"].to<JsonArray>();
+    JsonObject callObj = params.add<JsonObject>();
     callObj["to"] = contract;
 
     char tokenIdHex[65];
@@ -89,7 +89,7 @@ String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId)
     Serial.println("=== Response ===");
     Serial.println(payload);
 
-    DynamicJsonDocument docResponse(8192);
+    JsonDocument docResponse;
     DeserializationError error = deserializeJson(docResponse, payload);
     http.end();
 
