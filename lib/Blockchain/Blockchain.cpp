@@ -24,24 +24,6 @@ Metadata parseAbiMetadata(String hex)
 
     unsigned long imageLength = strtoul(hex.substring(imageOffset * 2, imageOffset * 2 + 64).c_str(), NULL, 16);
     md.imageHex = "0x" + hex.substring(imageOffset * 2 + 64, imageOffset * 2 + 64 + imageLength * 2);
-
-    unsigned long urlLength = strtoul(hex.substring(urlOffset * 2, urlOffset * 2 + 64).c_str(), NULL, 16);
-    if (urlLength > 0 && urlLength < 512)
-    {
-        String urlHex = hex.substring(urlOffset * 2 + 64, urlOffset * 2 + 64 + urlLength * 2);
-        md.url = "";
-        for (int i = 0; i < urlLength * 2; i += 2)
-        {
-            char c = (char)strtol(urlHex.substring(i, i + 2).c_str(), NULL, 16);
-            if (c == 0)
-                break;
-            md.url += c;
-        }
-    }
-    else
-    {
-        md.url = "";
-    }
     return md;
 }
 

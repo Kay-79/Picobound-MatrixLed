@@ -15,7 +15,7 @@ namespace AppConfig
     {
         constexpr char RPC_URL[] = "https://ethereum-sepolia-rpc.publicnode.com";
         constexpr char CONTRACT_ADDRESS[] = "0x96a241b3da246d30d4d4b0a79436ab4ee26585c9";
-        constexpr int TOKEN_ID = 9222;
+        constexpr int TOKEN_ID = 9223;
         constexpr size_t PIXEL_HEX_CHARS_PER_FRAME = 256; // 16x16 matrix
         constexpr uint8_t MAX_ANIMATION_FRAMES = 4;
         constexpr size_t SINGLE_IMAGE_PAYLOAD_CHARS = PIXEL_HEX_CHARS_PER_FRAME + 2; // account for 0x prefix
@@ -39,7 +39,7 @@ namespace AppConfig
 
     namespace Display
     {
-        constexpr uint8_t DEFAULT_ANIMATION_SPEED = 1;
+        constexpr uint8_t DEFAULT_ANIMATION_SPEED = 3; // 1=slow, 2=medium, 3=fast
         constexpr uint16_t BASE_ANIMATION_INTERVAL_MS = 1000;
     }
 
