@@ -18,8 +18,8 @@
 ## Feature Workflow
 
 -   Networking: call `connectWiFi()` during boot; if retries are needed, expose them via a helper rather than editing `main.cpp` directly.
--   Image fetch: build RPC payloads with `Blockchain::getPicoboundImage(...)` and validate against `AppConfig::Blockchain::EXPECTED_IMAGE_CHARS` before rendering.
--   Display: update visuals through `drawPixelString()`; when only brightness changes, call `displaySetBrightness()`.
+-   Image fetch: build RPC payloads with `Blockchain::getPicoboundImage(...)` and ensure the sanitized hex payload is either one frame (`AppConfig::Blockchain::PIXEL_HEX_CHARS_PER_FRAME`) or four frames (`AppConfig::Blockchain::PIXEL_HEX_CHARS_PER_FRAME * AppConfig::Blockchain::MAX_ANIMATION_FRAMES`).
+-   Display: update visuals through `drawPixelString()`; when only brightness changes, call `displaySetBrightness()`. 1024-char payloads encode a 32x32 canvas that is split into TL/TR/BL/BR 16x16 quadrants before cycling via `displayTick(...)` with `displaySetAnimationSpeed(...)` (speed 1=1s, 2=0.5s between frames).
 -   Buttons: initialize via `initButton()` and drive interactions via `buttonReleased(...)` with the global debounce constant.
 
 ## Testing & Deployment

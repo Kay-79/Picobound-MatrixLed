@@ -15,8 +15,11 @@ namespace AppConfig
     {
         constexpr char RPC_URL[] = "https://ethereum-sepolia-rpc.publicnode.com";
         constexpr char CONTRACT_ADDRESS[] = "0x96a241b3da246d30d4d4b0a79436ab4ee26585c9";
-        constexpr int TOKEN_ID = 6328;
-        constexpr size_t EXPECTED_IMAGE_CHARS = 258; // includes 0x prefix
+        constexpr int TOKEN_ID = 9222;
+        constexpr size_t PIXEL_HEX_CHARS_PER_FRAME = 256; // 16x16 matrix
+        constexpr uint8_t MAX_ANIMATION_FRAMES = 4;
+        constexpr size_t SINGLE_IMAGE_PAYLOAD_CHARS = PIXEL_HEX_CHARS_PER_FRAME + 2; // account for 0x prefix
+        constexpr size_t MULTI_IMAGE_PAYLOAD_CHARS = PIXEL_HEX_CHARS_PER_FRAME * MAX_ANIMATION_FRAMES + 2;
     }
 
     namespace Buttons
@@ -32,6 +35,12 @@ namespace AppConfig
         constexpr uint8_t MAX_LEVEL = 255;
         constexpr uint8_t STEP = 5;
         constexpr uint8_t DEFAULT_LEVEL = 10;
+    }
+
+    namespace Display
+    {
+        constexpr uint8_t DEFAULT_ANIMATION_SPEED = 1;
+        constexpr uint16_t BASE_ANIMATION_INTERVAL_MS = 1000;
     }
 
     namespace Timing

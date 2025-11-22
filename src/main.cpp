@@ -59,7 +59,14 @@ namespace
 
     bool isValidImage(const String &image)
     {
-        return image.length() == AppConfig::Blockchain::EXPECTED_IMAGE_CHARS;
+        size_t payloadLength = image.length();
+        if (image.startsWith("0x") && payloadLength >= 2)
+        {
+            payloadLength -= 2;
+        }
+
+        return payloadLength == AppConfig::Blockchain::PIXEL_HEX_CHARS_PER_FRAME ||
+               payloadLength == AppConfig::Blockchain::PIXEL_HEX_CHARS_PER_FRAME * AppConfig::Blockchain::MAX_ANIMATION_FRAMES;
     }
 
     String normalizePixelString(const String &image)
@@ -125,6 +132,7 @@ void loop()
 {
     unsigned long now = millis();
     handleBrightnessInput(now);
+    displayTick(now);
 
     if (shouldFetchImage(now))
     {

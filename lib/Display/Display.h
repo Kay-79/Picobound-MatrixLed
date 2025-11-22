@@ -11,5 +11,7 @@ extern CRGB leds[NUM_LEDS];
 void displayInit();
 void showTestPattern();
 void drawPixelString(const String &pixelString);
+void displayTick(unsigned long now);
 bool displayRefreshLastFrame();
 void displaySetBrightness(uint8_t brightness);
+void displaySetAnimationSpeed(uint8_t speed);
