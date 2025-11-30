@@ -9,6 +9,9 @@ A Wi-Fi enabled, blockchain-powered 16x16 WS2812B LED matrix display, built on E
 
 *The device displays pixel art fetched from the blockchain, API of Picobound.xyz, matching the on-screen preview.*
 
+![Picobound Matrix LED workflow](/demo/workflow.png)
+
+
 ## Features
 
 - **ESP32-based**: Fast, reliable microcontroller with Wi-Fi support.
