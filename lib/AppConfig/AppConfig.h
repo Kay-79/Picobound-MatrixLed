@@ -24,8 +24,8 @@ namespace AppConfig
 
     namespace Buttons
     {
-        constexpr uint8_t DECREASE_PIN = 7;
-        constexpr uint8_t INCREASE_PIN = 6;
+        constexpr uint8_t DECREASE_PIN = 10;
+        constexpr uint8_t INCREASE_PIN = 21;
         constexpr unsigned long DEBOUNCE_MS = 30;
     }
 

@@ -1,7 +1,7 @@
 #include "Display.h"
 #include "AppConfig.h"
 
-#define DATA_PIN 10
+#define DATA_PIN 6
 #define LED_TYPE WS2812B
 #define COLOR_ORDER GRB
 #define BRIGHTNESS 5
