@@ -13,6 +13,11 @@ namespace
     uint8_t g_brightness = AppConfig::Brightness::DEFAULT_LEVEL;
     unsigned long g_lastFetchMs = 0;
 
+    // Dynamic avatar state
+    String g_currentCollection = "";
+    int g_currentTokenId = -1;
+    unsigned long g_lastAvatarPollMs = 0;
+
     void applyBrightness()
     {
         Serial.printf("Applying brightness: %u\n", g_brightness);
@@ -79,36 +84,85 @@ namespace
         return sanitized;
     }
 
-    void renderImageOrFallback(const String &image)
-    {
-        if (isValidImage(image))
-        {
-            drawPixelString(normalizePixelString(image));
-        }
-        else
-        {
-            Serial.println("Image payload invalid, displaying test pattern.");
-            showTestPattern();
-        }
-    }
-
     bool shouldFetchImage(unsigned long now)
     {
         return g_lastFetchMs == 0 || (now - g_lastFetchMs) >= AppConfig::Timing::FETCH_INTERVAL_MS;
     }
 
+    void fetchAndDisplayImage();
+
+    void pollAvatar(unsigned long now)
+    {
+        if (now - g_lastAvatarPollMs < AppConfig::Timing::AVATAR_POLL_INTERVAL_MS)
+        {
+            return;
+        }
+        g_lastAvatarPollMs = now;
+
+        if (WiFi.status() != WL_CONNECTED)
+            return;
+
+        Serial.println("Polling primary avatar...");
+        Avatar avatar = getPrimaryAvatar(AppConfig::Blockchain::RPC_URL,
+                                         AppConfig::Blockchain::RESOLVER_ADDRESS,
+                                         AppConfig::Blockchain::USER_WALLET);
+
+        if (avatar.isValid)
+        {
+            // Check if changed
+            if (!avatar.collection.equalsIgnoreCase(g_currentCollection) || avatar.tokenId != g_currentTokenId)
+            {
+                Serial.printf("Avatar changed! New: %s #%d\n", avatar.collection.c_str(), avatar.tokenId);
+                g_currentCollection = avatar.collection;
+                g_currentTokenId = avatar.tokenId;
+
+                // Force fetch immediately
+                fetchAndDisplayImage();
+                g_lastFetchMs = now; // Reset periodic timer
+            }
+        }
+    }
+
     void fetchAndDisplayImage()
     {
-        Serial.println("Fetching image...");
-        g_image = getPicoboundImage(AppConfig::Blockchain::RPC_URL,
-                                    AppConfig::Blockchain::CONTRACT_ADDRESS,
-                                    AppConfig::Blockchain::TOKEN_ID);
-        Serial.printf("Image data length: %d\n", g_image.length());
-        if (g_image.length() > 0)
+        if (g_currentCollection.length() == 0 || g_currentTokenId < 0)
         {
-            Serial.println(g_image);
+            Serial.println("No avatar selected to fetch.");
+            return;
         }
-        renderImageOrFallback(g_image);
+
+        if (WiFi.status() != WL_CONNECTED)
+        {
+            Serial.println("WiFi disconnected. Attempting to reconnect...");
+            WiFi.disconnect();
+            WiFi.reconnect();
+            return;
+        }
+
+        Serial.printf("Fetching image for %s #%d...\n", g_currentCollection.c_str(), g_currentTokenId);
+        String fetchedImage = getPicoboundImage(AppConfig::Blockchain::RPC_URL,
+                                                g_currentCollection.c_str(),
+                                                g_currentTokenId);
+
+        if (fetchedImage.length() > 0 && isValidImage(fetchedImage))
+        {
+            Serial.printf("Image fetched successfully. Length: %d\n", fetchedImage.length());
+            g_image = fetchedImage;
+            drawPixelString(normalizePixelString(g_image));
+        }
+        else
+        {
+            Serial.println("Fetch failed or returned invalid image.");
+            if (g_image.length() > 0 && isValidImage(g_image))
+            {
+                Serial.println("Keeping previous valid image.");
+            }
+            else
+            {
+                Serial.println("No valid previous image. Displaying test pattern.");
+                showTestPattern();
+            }
+        }
     }
 } // namespace
 
@@ -133,6 +187,8 @@ void loop()
     unsigned long now = millis();
     handleBrightnessInput(now);
     displayTick(now);
+
+    pollAvatar(now);
 
     if (shouldFetchImage(now))
     {
