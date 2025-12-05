@@ -31,8 +31,38 @@ String setupNetwork()
     wm.setSaveConfigCallback(saveConfigCallback);
     wm.setConfigPortalTimeout(180); // Timeout after 3 minutes to allow normal operation if stuck
 
-    // Automatically connect using saved credentials,
-    // if connection fails, it starts an access point with the specified name
+    // 1. Try to connect to saved WiFi
+    if (WiFi.SSID().length() > 0)
+    {
+        Serial.printf("Attempting to connect to saved WiFi: %s\n", WiFi.SSID().c_str());
+        WiFi.begin();
+        int retries = 0;
+        while (WiFi.status() != WL_CONNECTED && retries < 20)
+        { // 10 seconds
+            delay(500);
+            Serial.print(".");
+            retries++;
+        }
+        Serial.println();
+    }
+
+    // 2. If failed, try default hardcoded WiFi
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.printf("Attempting to connect to default WiFi: %s\n", AppConfig::Wifi::DEFAULT_SSID);
+        WiFi.begin(AppConfig::Wifi::DEFAULT_SSID, AppConfig::Wifi::DEFAULT_PASSWORD);
+        int retries = 0;
+        while (WiFi.status() != WL_CONNECTED && retries < 20)
+        { // 10 seconds
+            delay(500);
+            Serial.print(".");
+            retries++;
+        }
+        Serial.println();
+    }
+
+    // 3. If still failed, start Config Portal (AP)
+    // autoConnect will check status; if connected, it returns true. If not, it starts AP.
     bool res = wm.autoConnect(AppConfig::Wifi::AP_NAME, AppConfig::Wifi::AP_PASSWORD);
 
     if (!res)

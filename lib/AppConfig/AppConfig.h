@@ -9,6 +9,8 @@ namespace AppConfig
     {
         constexpr char AP_NAME[] = "Picobound-Setup";
         constexpr char AP_PASSWORD[] = "picobound";
+        constexpr char DEFAULT_SSID[] = "24Kay";
+        constexpr char DEFAULT_PASSWORD[] = "2424KAYY";
     }
 
     namespace Storage
