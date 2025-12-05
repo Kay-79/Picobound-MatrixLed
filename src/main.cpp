@@ -10,6 +10,7 @@ namespace
     String g_image;
     ButtonState g_decButton;
     ButtonState g_incButton;
+    ButtonState g_resetButton;
     uint8_t g_brightness = AppConfig::Brightness::DEFAULT_LEVEL;
     unsigned long g_lastFetchMs = 0;
 
@@ -28,6 +29,7 @@ namespace
     {
         initButton(g_decButton, AppConfig::Buttons::DECREASE_PIN);
         initButton(g_incButton, AppConfig::Buttons::INCREASE_PIN);
+        initButton(g_resetButton, AppConfig::Buttons::RESET_PIN);
     }
 
     void adjustBrightness(int delta)
@@ -48,8 +50,7 @@ namespace
             applyBrightness();
         }
     }
-
-    void handleBrightnessInput(unsigned long now)
+    void handleInput(unsigned long now)
     {
         if (buttonReleased(g_decButton, AppConfig::Buttons::DECREASE_PIN, now, AppConfig::Buttons::DEBOUNCE_MS))
         {
@@ -59,6 +60,12 @@ namespace
         if (buttonReleased(g_incButton, AppConfig::Buttons::INCREASE_PIN, now, AppConfig::Buttons::DEBOUNCE_MS))
         {
             adjustBrightness(AppConfig::Brightness::STEP);
+        }
+
+        if (buttonReleased(g_resetButton, AppConfig::Buttons::RESET_PIN, now, AppConfig::Buttons::DEBOUNCE_MS))
+        {
+            Serial.println("Reset button pressed. Restarting...");
+            ESP.restart();
         }
     }
 
@@ -185,7 +192,7 @@ void setup()
 void loop()
 {
     unsigned long now = millis();
-    handleBrightnessInput(now);
+    handleInput(now);
     displayTick(now);
 
     pollAvatar(now);
