@@ -18,6 +18,7 @@ namespace
     String g_currentCollection = "";
     int g_currentTokenId = -1;
     unsigned long g_lastAvatarPollMs = 0;
+    String g_userWallet = "";
 
     void applyBrightness()
     {
@@ -64,7 +65,8 @@ namespace
 
         if (buttonReleased(g_resetButton, AppConfig::Buttons::RESET_PIN, now, AppConfig::Buttons::DEBOUNCE_MS))
         {
-            Serial.println("Reset button pressed. Restarting...");
+            Serial.println("Reset button pressed. Clearing settings and restarting...");
+            resetNetworkSettings();
             ESP.restart();
         }
     }
@@ -108,26 +110,26 @@ namespace
 
         if (WiFi.status() != WL_CONNECTED)
             return;
-
         Serial.println("Polling primary avatar...");
         Avatar avatar = getPrimaryAvatar(AppConfig::Blockchain::RPC_URL,
                                          AppConfig::Blockchain::RESOLVER_ADDRESS,
-                                         AppConfig::Blockchain::USER_WALLET);
+                                         g_userWallet.c_str());
 
         if (avatar.isValid)
-        {
-            // Check if changed
-            if (!avatar.collection.equalsIgnoreCase(g_currentCollection) || avatar.tokenId != g_currentTokenId)
+            if (avatar.isValid)
             {
-                Serial.printf("Avatar changed! New: %s #%d\n", avatar.collection.c_str(), avatar.tokenId);
-                g_currentCollection = avatar.collection;
-                g_currentTokenId = avatar.tokenId;
+                // Check if changed
+                if (!avatar.collection.equalsIgnoreCase(g_currentCollection) || avatar.tokenId != g_currentTokenId)
+                {
+                    Serial.printf("Avatar changed! New: %s #%d\n", avatar.collection.c_str(), avatar.tokenId);
+                    g_currentCollection = avatar.collection;
+                    g_currentTokenId = avatar.tokenId;
 
-                // Force fetch immediately
-                fetchAndDisplayImage();
-                g_lastFetchMs = now; // Reset periodic timer
+                    // Force fetch immediately
+                    fetchAndDisplayImage();
+                    g_lastFetchMs = now; // Reset periodic timer
+                }
             }
-        }
     }
 
     void fetchAndDisplayImage()
@@ -183,10 +185,20 @@ void setup()
     applyBrightness();
     initializeButtons();
 
-    if (!connectWiFi(AppConfig::Wifi::SSID, AppConfig::Wifi::PASSWORD))
+    // Check if DECREASE button is held down at boot to reset settings
+    // (Button 8 is a strapping pin, so we use Button 10 for boot-time reset)
+    if (digitalRead(AppConfig::Buttons::DECREASE_PIN) == LOW)
     {
+        Serial.println("Decrease button held. Resetting network settings...");
+        displaySetBrightness(50); // Visual feedback
+        resetNetworkSettings();
+        Serial.println("Settings reset. Restarting...");
+        delay(1000);
         ESP.restart();
     }
+
+    g_userWallet = setupNetwork();
+    Serial.printf("Using wallet: %s\n", g_userWallet.c_str());
 }
 
 void loop()
