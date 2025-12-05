@@ -36,6 +36,7 @@ namespace AppConfig
         constexpr uint8_t DECREASE_PIN = 10;
         constexpr uint8_t INCREASE_PIN = 21;
         constexpr uint8_t RESET_PIN = 8;
+        constexpr uint8_t RESET_BRIGHTNESS_PIN = 5;
         constexpr unsigned long DEBOUNCE_MS = 30;
     }
 
