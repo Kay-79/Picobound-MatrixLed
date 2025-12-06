@@ -22,10 +22,10 @@ namespace AppConfig
     namespace Blockchain
     {
         constexpr char RPC_URL[] = "https://ethereum-sepolia-rpc.publicnode.com";
-        constexpr char RESOLVER_ADDRESS[] = "0x27dEF0b4C19Ce4606EE84E8d84FE332cAa0876D9";
+        constexpr char RESOLVER_ADDRESS[] = "0x00000000f6bb2f2820d990631842fdf5a6ad6e66";
         // Default wallet if not configured
         constexpr char DEFAULT_WALLET[] = "0xD59FA9E2bD52e247a9c4AD2472C4131E097d0531";
-        constexpr char CONTRACT_ADDRESS[] = "0x96a241b3da246d30d4d4b0a79436ab4ee26585c9";
+        constexpr char CONTRACT_ADDRESS[] = "0x000000005857e74acd11df21d4346c515544501d";
         constexpr int TOKEN_ID = 9223;
         constexpr size_t PIXEL_HEX_CHARS_PER_FRAME = 256; // 16x16 matrix
         constexpr uint8_t MAX_ANIMATION_FRAMES = 4;
