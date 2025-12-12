@@ -45,9 +45,9 @@ namespace AppConfig
     namespace Brightness
     {
         constexpr uint8_t MIN_LEVEL = 0;
-        constexpr uint8_t MAX_LEVEL = 255;
-        constexpr uint8_t STEP = 5;
-        constexpr uint8_t DEFAULT_LEVEL = 10;
+        constexpr uint8_t MAX_LEVEL = 50;
+        constexpr uint8_t STEP = 3;
+        constexpr uint8_t DEFAULT_LEVEL = 5;
     }
 
     namespace Display
