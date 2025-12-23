@@ -6,8 +6,7 @@
 struct Metadata
 {
     String treasuryWallet;
-    String imageHex;
-    String url;
+    String image;
 };
 
 Metadata parseAbiMetadata(String hex)
@@ -23,11 +22,11 @@ Metadata parseAbiMetadata(String hex)
     unsigned long urlOffset = strtoul(hex.substring(128, 192).c_str(), NULL, 16);
 
     unsigned long imageLength = strtoul(hex.substring(imageOffset * 2, imageOffset * 2 + 64).c_str(), NULL, 16);
-    md.imageHex = "0x" + hex.substring(imageOffset * 2 + 64, imageOffset * 2 + 64 + imageLength * 2);
+    md.image = "0x" + hex.substring(imageOffset * 2 + 64, imageOffset * 2 + 64 + imageLength * 2);
     return md;
 }
 
-String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId)
+String getPicoboundImage(const char *rpcUrl, const char *contract, uint64_t tokenId)
 {
     WiFiClientSecure client;
     client.setInsecure();
@@ -45,7 +44,7 @@ String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId)
     callObj["to"] = contract;
 
     char tokenIdHex[65];
-    sprintf(tokenIdHex, "%064x", tokenId);
+    sprintf(tokenIdHex, "%064llx", tokenId);
 
     String data = String("0x834d5fac") + tokenIdHex;
     callObj["data"] = data;
@@ -82,7 +81,7 @@ String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId)
     }
 
     String hexResult = docResponse["result"] | "";
-    String img = parseAbiMetadata(hexResult).imageHex;
+    String img = parseAbiMetadata(hexResult).image;
     Serial.println("Parsed image string:");
     Serial.println(img);
 
@@ -166,10 +165,10 @@ Avatar getPrimaryAvatar(const char *rpcUrl, const char *resolverAddress, const c
 
     // Parse tokenId (second 32 bytes / 64 chars)
     String tokenIdHex = hexResult.substring(64, 128);
-    avatar.tokenId = (int)strtoul(tokenIdHex.c_str(), NULL, 16);
+    avatar.tokenId = (uint64_t)strtoull(tokenIdHex.c_str(), NULL, 16);
     avatar.isValid = true;
 
-    Serial.printf("Resolved Avatar: %s #%d\n", avatar.collection.c_str(), avatar.tokenId);
+    Serial.printf("Resolved Avatar: %s #%llu\n", avatar.collection.c_str(), avatar.tokenId);
 
     return avatar;
 }

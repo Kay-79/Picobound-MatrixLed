@@ -17,7 +17,7 @@ namespace
 
     // Dynamic avatar state
     String g_currentCollection = "";
-    int g_currentTokenId = -1;
+    uint64_t g_currentTokenId = UINT64_MAX;
     unsigned long g_lastAvatarPollMs = 0;
     String g_userWallet = "";
 
@@ -130,7 +130,7 @@ namespace
                 // Check if changed
                 if (!avatar.collection.equalsIgnoreCase(g_currentCollection) || avatar.tokenId != g_currentTokenId)
                 {
-                    Serial.printf("Avatar changed! New: %s #%d\n", avatar.collection.c_str(), avatar.tokenId);
+                    Serial.printf("Avatar changed! New: %s #%llu\n", avatar.collection.c_str(), avatar.tokenId);
                     g_currentCollection = avatar.collection;
                     g_currentTokenId = avatar.tokenId;
 
@@ -157,7 +157,7 @@ namespace
             return;
         }
 
-        Serial.printf("Fetching image for %s #%d...\n", g_currentCollection.c_str(), g_currentTokenId);
+        Serial.printf("Fetching image for %s #%llu...\n", g_currentCollection.c_str(), g_currentTokenId);
         String fetchedImage = getPicoboundImage(AppConfig::Blockchain::RPC_URL,
                                                 g_currentCollection.c_str(),
                                                 g_currentTokenId);

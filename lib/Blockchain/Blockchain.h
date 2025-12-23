@@ -4,9 +4,9 @@
 struct Avatar
 {
     String collection;
-    int tokenId;
+    uint64_t tokenId;
     bool isValid;
 };
 
-String getPicoboundImage(const char *rpcUrl, const char *contract, int tokenId);
+String getPicoboundImage(const char *rpcUrl, const char *contract, uint64_t tokenId);
 Avatar getPrimaryAvatar(const char *rpcUrl, const char *resolverAddress, const char *userAddress);
